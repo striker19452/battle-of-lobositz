@@ -369,7 +369,11 @@ export function GameBoard({
         onPointerCancel={(event) => onPointerUp(event, false)}
         onWheel={onWheel}
       >
-        <image href="/assets/field.png" width={MAP_WIDTH} height={MAP_HEIGHT} />
+        <image
+          href={`${import.meta.env.BASE_URL}assets/field.png`}
+          width={MAP_WIDTH}
+          height={MAP_HEIGHT}
+        />
         <g className="hex-layer">
           {BOARD_CELLS.map((cell) => {
             const occupyingUnit = units.find((unit) => unit.hexId === cell.id);
