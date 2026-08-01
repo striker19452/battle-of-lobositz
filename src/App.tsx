@@ -5,6 +5,7 @@ import {
 } from "./components/CombatResult";
 import { DiceRoll, type DiceRollState } from "./components/DiceRoll";
 import { GameBoard } from "./components/GameBoard";
+import { GameGuide } from "./components/GameGuide";
 import { PursuitPanel } from "./components/PursuitPanel";
 import { RetreatPanel } from "./components/RetreatPanel";
 import { SetupDialog } from "./components/SetupDialog";
@@ -796,6 +797,8 @@ export default function App() {
             <span>{translate(locale, "app.prototype")}</span>
             <span>v0.1</span>
           </div>
+
+          <GameGuide locale={locale} placement="sidebar" />
 
           {diceRoll && (
             <div ref={diceRef} className="dice-roll-anchor">

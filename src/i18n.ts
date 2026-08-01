@@ -63,6 +63,37 @@ const messages: Record<Locale, Record<string, string>> = {
     "setup.rule.prussianEngagement": "普鲁士接敌义务",
     "setup.rule.prussianEngagement.description":
       "普鲁士回合开始时若没有部队处于对敌攻击距离内，本回合必须至少移动一支部队进入攻击距离；如无法做到，普鲁士失败。",
+    "guide.eyebrow": "战前简报",
+    "guide.title": "60 秒入门",
+    "guide.duration": "背景、目标与规则",
+    "guide.background.title": "战役背景",
+    "guide.background.body":
+      "1756 年 10 月，七年战争初期。腓特烈二世率领普军在波希米亚罗布西茨附近迎战布劳恩元帅的奥军，这是战争中的第一场大规模会战。",
+    "guide.objective.title": "双方目标",
+    "guide.objective.prussian":
+      "在奥地利回合结束时，以正常面单位同时控制罗布西茨的两个目标格（6,2）和（7,3）。",
+    "guide.objective.austrian":
+      "阻止普军同时控制两个目标格。启用接敌义务时，普军若无法完成规定的接敌移动，奥军也立即获胜。",
+    "guide.turn.title": "一个回合怎么进行",
+    "guide.turn.move.title": "移动",
+    "guide.turn.move.body": "本方最多移动 3 个单位，每个单位只能移动一次。",
+    "guide.turn.attack.title": "攻击",
+    "guide.turn.attack.body":
+      "本方最多使用 2 个单位攻击；两个单位也可以联合攻击同一目标。",
+    "guide.turn.end.title": "结束回合",
+    "guide.turn.end.body":
+      "不在敌方控制区内的本方混乱单位恢复正常，然后换对方行动。",
+    "guide.rules.title": "先记住这四点",
+    "guide.rule.zoc":
+      "正常面单位控制周围六格；进入敌方控制区后停止。混乱单位没有控制区。",
+    "guide.rule.terrain":
+      "城镇、树林、沼泽和跨越高程线都会让移动停止；易北河不可进入。",
+    "guide.rule.combat":
+      "攻击值等于单位攻击力加骰点，防御值等于基础防御加地形修正。攻击至少高出防御 2 才会直接消灭正常单位。",
+    "guide.rule.ranged":
+      "远程攻击需要视线畅通；中间单位、城镇和树林会阻挡。移动过的远程单位不能攻击。",
+    "guide.tip":
+      "不必背下全部规则：点击单位或格子，右侧会显示合法移动、地形说明和攻击判定。",
     "counter.moves": "移动 {used}/3",
     "counter.attacks": "攻击 {used}/2",
     "engagement.required.title": "接敌义务尚未完成",
@@ -289,6 +320,38 @@ const messages: Record<Locale, Record<string, string>> = {
     "setup.rule.prussianEngagement": "Prussian engagement obligation",
     "setup.rule.prussianEngagement.description":
       "If no Prussian unit is within its attack range of an enemy at the start of a Prussian turn, at least one must move within range that turn. If none can, Prussia loses.",
+    "guide.eyebrow": "Battle briefing",
+    "guide.title": "Learn in 60 seconds",
+    "guide.duration": "Background, objectives and rules",
+    "guide.background.title": "Historical setting",
+    "guide.background.body":
+      "In October 1756, during the opening campaign of the Seven Years' War, Frederick II's Prussian army met Field Marshal Browne's Austrian force outside Lobositz in the war's first major battle.",
+    "guide.objective.title": "Objectives",
+    "guide.objective.prussian":
+      "At the end of an Austrian turn, ready Prussian units must control both Lobositz objective hexes, (6,2) and (7,3).",
+    "guide.objective.austrian":
+      "Prevent Prussia from controlling both objectives. With the engagement obligation enabled, Austria also wins if Prussia cannot make the required move within attack range.",
+    "guide.turn.title": "How a turn works",
+    "guide.turn.move.title": "Move",
+    "guide.turn.move.body":
+      "Move up to 3 friendly units. Each unit can move only once per turn.",
+    "guide.turn.attack.title": "Attack",
+    "guide.turn.attack.body":
+      "Use up to 2 friendly units to attack. Two units may combine against one target.",
+    "guide.turn.end.title": "End the turn",
+    "guide.turn.end.body":
+      "Recover friendly disordered units outside enemy zones of control, then pass play to the opponent.",
+    "guide.rules.title": "Four rules to remember",
+    "guide.rule.zoc":
+      "Ready units control the six adjacent hexes. Entering an enemy zone of control ends movement. Disordered units exert no zone of control.",
+    "guide.rule.terrain":
+      "Town, woods, marsh and crossing an elevation line end movement. The Elbe is impassable.",
+    "guide.rule.combat":
+      "Attack equals unit strength plus the die; defense equals base defense plus terrain. A ready unit is eliminated when attack exceeds defense by at least 2.",
+    "guide.rule.ranged":
+      "Ranged attacks need clear line of sight. Intervening units, town and woods block it. A ranged unit cannot attack after moving.",
+    "guide.tip":
+      "You do not need to memorize everything. Select a unit or hex to see legal moves, terrain details and the exact attack ruling.",
     "counter.moves": "Moves {used}/3",
     "counter.attacks": "Attacks {used}/2",
     "engagement.required.title": "Engagement required",

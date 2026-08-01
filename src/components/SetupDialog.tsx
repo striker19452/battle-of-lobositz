@@ -18,6 +18,7 @@ import type {
 } from "../game/types";
 import { translate } from "../i18n";
 import { GameBoard } from "./GameBoard";
+import { GameGuide } from "./GameGuide";
 
 interface SetupDialogProps {
   locale: Locale;
@@ -128,6 +129,12 @@ export function SetupDialog({
           <p className="setup-mode-view__intro">
             {translate(locale, "setup.intro")}
           </p>
+
+          <GameGuide
+            locale={locale}
+            placement="setup"
+            initiallyOpen
+          />
 
           <div className="setup-mode-list" role="radiogroup">
             {MODES.map((mode, index) => (

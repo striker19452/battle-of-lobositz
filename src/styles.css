@@ -552,6 +552,217 @@ button:focus-visible,
   line-height: 1.6;
 }
 
+.game-guide {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--shell);
+}
+
+.game-guide--setup {
+  margin: 0 28px 18px;
+}
+
+.game-guide--sidebar {
+  margin-bottom: 18px;
+}
+
+.game-guide summary {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 56px;
+  padding: 9px 14px;
+  color: var(--text);
+  cursor: pointer;
+  list-style: none;
+}
+
+.game-guide summary::-webkit-details-marker {
+  display: none;
+}
+
+.game-guide summary:hover {
+  background: var(--shell-raised);
+}
+
+.game-guide summary:focus-visible {
+  outline: 2px solid var(--accent-strong);
+  outline-offset: -3px;
+}
+
+.game-guide summary > span:first-child {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.game-guide summary small {
+  color: var(--accent);
+  font-size: 0.6rem;
+  font-weight: 780;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.game-guide summary strong {
+  font-size: 0.92rem;
+  font-weight: 760;
+}
+
+.game-guide__duration {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+}
+
+.game-guide summary::after {
+  content: "+";
+  display: grid;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+  place-items: center;
+  color: var(--accent-strong);
+  font-size: 1.15rem;
+  font-weight: 500;
+  transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.game-guide[open] summary::after {
+  transform: rotate(45deg);
+}
+
+.game-guide__body {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: 18px;
+  padding: 17px 18px 19px;
+  border-top: 1px solid var(--line);
+}
+
+.game-guide__body > section,
+.game-guide__briefing {
+  min-width: 0;
+}
+
+.game-guide__body > section {
+  padding-left: 18px;
+  border-left: 1px solid var(--line);
+}
+
+.game-guide__briefing {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+}
+
+.game-guide h3 {
+  margin: 0 0 8px;
+  color: var(--accent);
+  font-size: 0.64rem;
+  font-weight: 780;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.game-guide p,
+.game-guide dd {
+  margin: 0;
+  color: var(--paper-muted);
+  font-size: 0.7rem;
+  line-height: 1.55;
+}
+
+.game-guide__objectives {
+  display: grid;
+  margin: 0;
+  border-top: 1px solid var(--line);
+}
+
+.game-guide__objectives > div {
+  display: grid;
+  grid-template-columns: 60px minmax(0, 1fr);
+  gap: 9px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.game-guide__objectives dt {
+  color: var(--text);
+  font-size: 0.68rem;
+  font-weight: 760;
+}
+
+.game-guide__turn ol {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.game-guide__turn li {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 9px;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+}
+
+.game-guide__turn li:last-child {
+  border-bottom: 1px solid var(--line);
+}
+
+.game-guide__turn li > span {
+  color: var(--accent);
+  font-size: 0.61rem;
+  font-weight: 760;
+  font-variant-numeric: tabular-nums;
+}
+
+.game-guide__turn li strong {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--text);
+  font-size: 0.72rem;
+}
+
+.game-guide__rules ul {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding-left: 16px;
+  color: var(--paper-muted);
+  font-size: 0.69rem;
+  line-height: 1.48;
+}
+
+.game-guide__rules li::marker {
+  color: var(--accent);
+}
+
+.game-guide .game-guide__tip {
+  margin-top: 11px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  color: var(--text-muted);
+  font-size: 0.66rem;
+}
+
+.game-guide--sidebar .game-guide__duration {
+  display: none;
+}
+
+.game-guide--sidebar .game-guide__body {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 17px;
+  padding: 14px;
+}
+
+.game-guide--sidebar .game-guide__body > section {
+  padding: 0;
+  border-left: 0;
+}
+
 .setup-mode-list {
   display: grid;
   padding-inline: 28px;
@@ -2266,6 +2477,7 @@ button:focus-visible,
   }
 
   .inspector__eyebrow,
+  .game-guide--sidebar,
   .inspector__footer {
     grid-column: 1 / -1;
   }
@@ -2316,6 +2528,26 @@ button:focus-visible,
   .setup-mode-view__intro {
     padding: 17px 14px 12px;
     font-size: 0.75rem;
+  }
+
+  .game-guide--setup {
+    margin: 0 14px 14px;
+  }
+
+  .game-guide__duration {
+    display: none;
+  }
+
+  .game-guide__body {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    padding: 14px;
+  }
+
+  .game-guide__body > section {
+    padding: 15px 0 0;
+    border-top: 1px solid var(--line);
+    border-left: 0;
   }
 
   .setup-mode-list {
