@@ -795,7 +795,7 @@ export default function App() {
         <aside className="inspector">
           <div className="inspector__eyebrow">
             <span>{translate(locale, "app.prototype")}</span>
-            <span>v0.1</span>
+            <span>v1.0</span>
           </div>
 
           <GameGuide locale={locale} placement="sidebar" />

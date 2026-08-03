@@ -1,5 +1,6 @@
 import {
   useCallback,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -63,21 +64,46 @@ interface GameBoardProps {
   onHexActivate: (id: HexId) => void;
 }
 
-const FULL_CAMERA: Camera = {
-  x: 0,
-  y: 0,
-  width: MAP_WIDTH,
-  height: MAP_HEIGHT
-};
+const LANDSCAPE_BOARD_QUERY =
+  "(hover: hover) and (pointer: fine) and (min-width: 700px), " +
+  "(orientation: landscape) and (min-width: 700px) and (min-height: 500px)";
 
-function clampCamera(camera: Camera): Camera {
-  const width = Math.min(MAP_WIDTH, Math.max(MAP_WIDTH / 4, camera.width));
-  const height = (width / MAP_WIDTH) * MAP_HEIGHT;
+function prefersLandscapeBoard(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia(LANDSCAPE_BOARD_QUERY).matches
+  );
+}
+
+function getBoardDimensions(landscape: boolean): Point {
+  return landscape
+    ? { x: MAP_HEIGHT, y: MAP_WIDTH }
+    : { x: MAP_WIDTH, y: MAP_HEIGHT };
+}
+
+function getFullCamera(landscape: boolean): Camera {
+  const dimensions = getBoardDimensions(landscape);
+  return {
+    x: 0,
+    y: 0,
+    width: dimensions.x,
+    height: dimensions.y
+  };
+}
+
+function clampCamera(camera: Camera, landscape: boolean): Camera {
+  const dimensions = getBoardDimensions(landscape);
+  const width = Math.min(
+    dimensions.x,
+    Math.max(dimensions.x / 4, camera.width)
+  );
+  const height = (width / dimensions.x) * dimensions.y;
   return {
     width,
     height,
-    x: Math.min(MAP_WIDTH - width, Math.max(0, camera.x)),
-    y: Math.min(MAP_HEIGHT - height, Math.max(0, camera.y))
+    x: Math.min(dimensions.x - width, Math.max(0, camera.x)),
+    y: Math.min(dimensions.y - height, Math.max(0, camera.y))
   };
 }
 
@@ -139,7 +165,8 @@ function Counter({
   selectionIndex,
   retreating,
   pursuitCandidate,
-  pursuitSelected
+  pursuitSelected,
+  landscape
 }: {
   unit: Unit;
   selected: boolean;
@@ -148,13 +175,14 @@ function Counter({
   retreating: boolean;
   pursuitCandidate: boolean;
   pursuitSelected: boolean;
+  landscape: boolean;
 }) {
   if (!unit.hexId) return null;
   const cell = BOARD_BY_ID.get(unit.hexId);
   if (!cell) return null;
-  const transform = `translate(${cell.center.x - 42} ${cell.center.y - 42}) rotate(${
-    unit.status === "disordered" ? 90 : 0
-  } 42 42)`;
+  const counterRotation =
+    (landscape ? -90 : 0) + (unit.status === "disordered" ? 90 : 0);
+  const transform = `translate(${cell.center.x - 42} ${cell.center.y - 42}) rotate(${counterRotation} 42 42)`;
 
   return (
     <g
@@ -216,13 +244,37 @@ export function GameBoard({
   helpText,
   onHexActivate
 }: GameBoardProps) {
-  const [camera, setCamera] = useState<Camera>(FULL_CAMERA);
+  const [landscape, setLandscape] = useState(prefersLandscapeBoard);
+  const [camera, setCamera] = useState<Camera>(() =>
+    getFullCamera(prefersLandscapeBoard())
+  );
   const svgRef = useRef<SVGSVGElement>(null);
   const pointers = useRef(new Map<number, Point>());
   const dragStart = useRef<DragStart | null>(null);
   const pinchStart = useRef<PinchStart | null>(null);
   const didPan = useRef(false);
   const pressedHex = useRef<HexId | null>(null);
+
+  useEffect(() => {
+    if (
+      typeof window === "undefined" ||
+      typeof window.matchMedia !== "function"
+    ) {
+      return;
+    }
+
+    const media = window.matchMedia(LANDSCAPE_BOARD_QUERY);
+    const handleChange = (event: MediaQueryListEvent) => {
+      setLandscape(event.matches);
+      setCamera(getFullCamera(event.matches));
+      pointers.current.clear();
+      dragStart.current = null;
+      pinchStart.current = null;
+      pressedHex.current = null;
+    };
+    media.addEventListener("change", handleChange);
+    return () => media.removeEventListener("change", handleChange);
+  }, []);
 
   const targetUnit = units.find((unit) => unit.id === targetUnitId);
   const blockerSet = useMemo(
@@ -246,9 +298,9 @@ export function GameBoard({
         y: worldY - height * anchor.y,
         width,
         height
-      });
+      }, landscape);
     });
-  }, []);
+  }, [landscape]);
 
   function eventPoint(event: ReactPointerEvent<SVGSVGElement>): Point {
     return { x: event.clientX, y: event.clientY };
@@ -294,7 +346,7 @@ export function GameBoard({
           ...dragStart.current.camera,
           x: dragStart.current.camera.x - (dx / rect.width) * dragStart.current.camera.width,
           y: dragStart.current.camera.y - (dy / rect.height) * dragStart.current.camera.height
-        })
+        }, landscape)
       );
     } else if (activePointers.length === 2 && pinchStart.current) {
       didPan.current = true;
@@ -317,7 +369,7 @@ export function GameBoard({
           y: worldY - height * currentRectY,
           width,
           height
-        })
+        }, landscape)
       );
     }
   }
@@ -355,12 +407,22 @@ export function GameBoard({
       .join(" ")
   }));
 
+  const fullCamera = getFullCamera(landscape);
+  const boardTransform = landscape
+    ? `translate(${MAP_HEIGHT} 0) rotate(90)`
+    : undefined;
+
   return (
-    <section className="board-frame" aria-label={translate(locale, "board.label")}>
+    <section
+      className={`board-frame ${landscape ? "is-landscape" : "is-portrait"}`}
+      data-board-orientation={landscape ? "landscape" : "portrait"}
+      aria-label={translate(locale, "board.label")}
+    >
       <svg
         ref={svgRef}
         className="game-board"
         viewBox={`${camera.x} ${camera.y} ${camera.width} ${camera.height}`}
+        preserveAspectRatio="xMidYMid meet"
         role="application"
         aria-label={translate(locale, "board.label")}
         onPointerDown={onPointerDown}
@@ -369,124 +431,131 @@ export function GameBoard({
         onPointerCancel={(event) => onPointerUp(event, false)}
         onWheel={onWheel}
       >
-        <image
-          href={`${import.meta.env.BASE_URL}assets/field.png`}
-          width={MAP_WIDTH}
-          height={MAP_HEIGHT}
-        />
-        <g className="hex-layer">
-          {BOARD_CELLS.map((cell) => {
-            const occupyingUnit = units.find((unit) => unit.hexId === cell.id);
-            const selectionIndex = occupyingUnit
-              ? selectedUnitIds.indexOf(occupyingUnit.id)
-              : -1;
-            const selected = selectionIndex >= 0;
-            const target = occupyingUnit?.id === targetUnitId;
-            const pursuitCandidate = occupyingUnit
-              ? pursuitUnitIds.includes(occupyingUnit.id)
-              : false;
-            const classes = [
-              "hex-hit",
-              legalMoves.has(cell.id) ? "is-legal" : "",
-              selected ? "is-selected" : "",
-              selectionIndex === 1 ? "is-supporting" : "",
-              target ? "is-target" : "",
-              blockerSet.has(cell.id) ? "is-blocker" : "",
-              cell.id === retreatOrigin ? "is-retreat-origin" : "",
-              retreatDestinations.includes(cell.id)
-                ? "is-retreat-destination"
-                : "",
-              cell.id === selectedRetreatDestination
-                ? "is-retreat-selected"
-                : "",
-              pursuitCandidate ? "is-pursuit-candidate" : "",
-              cell.id === pursuitDestination ? "is-pursuit-destination" : "",
-              occupyingUnit?.id === selectedPursuitUnitId
-                ? "is-pursuit-selected"
-                : "",
-              cell.id === inspectedHexId ? "is-inspected" : "",
-              cell.victory ? "is-victory" : "",
-              cell.terrain.includes("elbe") ? "is-impassable" : ""
-            ].join(" ");
-            const terrain = cell.terrain
-              .map((kind) => translate(locale, `terrain.${kind}`))
-              .join(", ");
-            const label = `${cell.id}, ${terrain}${
-              occupyingUnit
-                ? `, ${translate(locale, `side.${occupyingUnit.side}`)} ${translate(
-                    locale,
-                    `unit.${occupyingUnit.kind}`
-                  )}`
-                : ""
-            }${
-              cell.id === selectedRetreatDestination
-                ? `, ${translate(locale, "retreat.confirm")}`
-                : retreatDestinations.includes(cell.id)
-                  ? `, ${translate(locale, "retreat.choose")}`
-                  : cell.id === pursuitDestination
-                ? `, ${translate(locale, "pursuit.destination", { hex: cell.id })}`
-                : pursuitCandidate
-                  ? `, ${translate(locale, "pursuit.choose")}`
+        <g className="board-orientation" transform={boardTransform}>
+          <image
+            href={`${import.meta.env.BASE_URL}assets/field.webp`}
+            width={MAP_WIDTH}
+            height={MAP_HEIGHT}
+          />
+          <g className="hex-layer">
+            {BOARD_CELLS.map((cell) => {
+              const occupyingUnit = units.find(
+                (unit) => unit.hexId === cell.id
+              );
+              const selectionIndex = occupyingUnit
+                ? selectedUnitIds.indexOf(occupyingUnit.id)
+                : -1;
+              const selected = selectionIndex >= 0;
+              const target = occupyingUnit?.id === targetUnitId;
+              const pursuitCandidate = occupyingUnit
+                ? pursuitUnitIds.includes(occupyingUnit.id)
+                : false;
+              const classes = [
+                "hex-hit",
+                legalMoves.has(cell.id) ? "is-legal" : "",
+                selected ? "is-selected" : "",
+                selectionIndex === 1 ? "is-supporting" : "",
+                target ? "is-target" : "",
+                blockerSet.has(cell.id) ? "is-blocker" : "",
+                cell.id === retreatOrigin ? "is-retreat-origin" : "",
+                retreatDestinations.includes(cell.id)
+                  ? "is-retreat-destination"
+                  : "",
+                cell.id === selectedRetreatDestination
+                  ? "is-retreat-selected"
+                  : "",
+                pursuitCandidate ? "is-pursuit-candidate" : "",
+                cell.id === pursuitDestination
+                  ? "is-pursuit-destination"
+                  : "",
+                occupyingUnit?.id === selectedPursuitUnitId
+                  ? "is-pursuit-selected"
+                  : "",
+                cell.id === inspectedHexId ? "is-inspected" : "",
+                cell.victory ? "is-victory" : "",
+                cell.terrain.includes("elbe") ? "is-impassable" : ""
+              ].join(" ");
+              const terrain = cell.terrain
+                .map((kind) => translate(locale, `terrain.${kind}`))
+                .join(", ");
+              const label = `${cell.id}, ${terrain}${
+                occupyingUnit
+                  ? `, ${translate(locale, `side.${occupyingUnit.side}`)} ${translate(
+                      locale,
+                      `unit.${occupyingUnit.kind}`
+                    )}`
                   : ""
-            }`;
+              }${
+                cell.id === selectedRetreatDestination
+                  ? `, ${translate(locale, "retreat.confirm")}`
+                  : retreatDestinations.includes(cell.id)
+                    ? `, ${translate(locale, "retreat.choose")}`
+                    : cell.id === pursuitDestination
+                      ? `, ${translate(locale, "pursuit.destination", { hex: cell.id })}`
+                      : pursuitCandidate
+                        ? `, ${translate(locale, "pursuit.choose")}`
+                        : ""
+              }`;
 
-            return (
-              <polygon
-                key={cell.id}
-                className={classes}
-                points={hexPolygonPoints(cell.center)}
-                role="button"
-                tabIndex={0}
-                data-hex-id={cell.id}
-                aria-label={label}
-                aria-pressed={
-                  cell.id === inspectedHexId ||
-                  cell.id === selectedRetreatDestination ||
-                  occupyingUnit?.id === selectedPursuitUnitId
-                }
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    onHexActivate(cell.id);
+              return (
+                <polygon
+                  key={cell.id}
+                  className={classes}
+                  points={hexPolygonPoints(cell.center)}
+                  role="button"
+                  tabIndex={0}
+                  data-hex-id={cell.id}
+                  aria-label={label}
+                  aria-pressed={
+                    cell.id === inspectedHexId ||
+                    cell.id === selectedRetreatDestination ||
+                    occupyingUnit?.id === selectedPursuitUnitId
                   }
-                }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      onHexActivate(cell.id);
+                    }
+                  }}
+                />
+              );
+            })}
+          </g>
+
+          {renderedLines.map(({ lineOfSight, points }, index) =>
+            points ? (
+              <polyline
+                key={`${index}-${points}`}
+                className={`los-line ${lineOfSight.visible ? "is-clear" : "is-blocked"}`}
+                points={points}
+                pointerEvents="none"
               />
-            );
-          })}
-        </g>
+            ) : null
+          )}
 
-        {renderedLines.map(({ lineOfSight, points }, index) =>
-          points ? (
-            <polyline
-              key={`${index}-${points}`}
-              className={`los-line ${lineOfSight.visible ? "is-clear" : "is-blocked"}`}
-              points={points}
-              pointerEvents="none"
-            />
-          ) : null
-        )}
-
-        <g className="unit-layer">
-          {units.map((unit) => (
-            <Counter
-              key={unit.id}
-              unit={unit}
-              selected={
-                selectedUnitIds.includes(unit.id) ||
-                unit.id === targetUnit?.id ||
-                unit.id === selectedPursuitUnitId
-              }
-              selectionIndex={
-                selectedUnitIds.includes(unit.id)
-                  ? selectedUnitIds.indexOf(unit.id)
-                  : undefined
-              }
-              retreating={unit.hexId === retreatOrigin}
-              pursuitCandidate={pursuitUnitIds.includes(unit.id)}
-              pursuitSelected={unit.id === selectedPursuitUnitId}
-              active={unit.side === activeSide}
-            />
-          ))}
+          <g className="unit-layer">
+            {units.map((unit) => (
+              <Counter
+                key={unit.id}
+                unit={unit}
+                selected={
+                  selectedUnitIds.includes(unit.id) ||
+                  unit.id === targetUnit?.id ||
+                  unit.id === selectedPursuitUnitId
+                }
+                selectionIndex={
+                  selectedUnitIds.includes(unit.id)
+                    ? selectedUnitIds.indexOf(unit.id)
+                    : undefined
+                }
+                retreating={unit.hexId === retreatOrigin}
+                pursuitCandidate={pursuitUnitIds.includes(unit.id)}
+                pursuitSelected={unit.id === selectedPursuitUnitId}
+                active={unit.side === activeSide}
+                landscape={landscape}
+              />
+            ))}
+          </g>
         </g>
       </svg>
 
@@ -497,7 +566,7 @@ export function GameBoard({
         <button type="button" onClick={() => setZoom(1 / 1.35)} aria-label={translate(locale, "board.zoomOut")}>
           −
         </button>
-        <button type="button" onClick={() => setCamera(FULL_CAMERA)} aria-label={translate(locale, "board.fit")}>
+        <button type="button" onClick={() => setCamera(fullCamera)} aria-label={translate(locale, "board.fit")}>
           ⤢
         </button>
       </div>
