@@ -254,6 +254,8 @@ export function SetupDialog({
               locale={locale}
               units={deployment.units}
               activeSide={deployment.activeSide}
+              movedUnitIds={[]}
+              attackedUnitIds={[]}
               selectedUnitIds={selectedUnitId ? [selectedUnitId] : []}
               targetUnitId={null}
               inspectedHexId={selectedUnit?.hexId ?? null}

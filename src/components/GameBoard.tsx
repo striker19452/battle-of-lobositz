@@ -49,6 +49,8 @@ interface GameBoardProps {
   locale: Locale;
   units: Unit[];
   activeSide: Unit["side"];
+  movedUnitIds: string[];
+  attackedUnitIds: string[];
   selectedUnitIds: string[];
   targetUnitId: string | null;
   inspectedHexId: HexId | null;
@@ -67,6 +69,7 @@ interface GameBoardProps {
 const LANDSCAPE_BOARD_QUERY =
   "(hover: hover) and (pointer: fine) and (min-width: 700px), " +
   "(orientation: landscape) and (min-width: 700px) and (min-height: 500px)";
+const COUNTER_SCALE = 1.42;
 
 function prefersLandscapeBoard(): boolean {
   return (
@@ -159,7 +162,10 @@ function UnitGlyph({ kind }: { kind: UnitKind }) {
 }
 
 function Counter({
+  locale,
   unit,
+  moved,
+  attacked,
   selected,
   active,
   selectionIndex,
@@ -168,7 +174,10 @@ function Counter({
   pursuitSelected,
   landscape
 }: {
+  locale: Locale;
   unit: Unit;
+  moved: boolean;
+  attacked: boolean;
   selected: boolean;
   active: boolean;
   selectionIndex?: number;
@@ -180,9 +189,29 @@ function Counter({
   if (!unit.hexId) return null;
   const cell = BOARD_BY_ID.get(unit.hexId);
   if (!cell) return null;
+  const landscapeRotation = landscape ? -90 : 0;
   const counterRotation =
-    (landscape ? -90 : 0) + (unit.status === "disordered" ? 90 : 0);
-  const transform = `translate(${cell.center.x - 42} ${cell.center.y - 42}) rotate(${counterRotation} 42 42)`;
+    landscapeRotation + (unit.status === "disordered" ? 90 : 0);
+  const transform = [
+    `translate(${cell.center.x - 42} ${cell.center.y - 42})`,
+    "translate(42 42)",
+    `scale(${COUNTER_SCALE})`,
+    "translate(-42 -42)"
+  ].join(" ");
+  const actionMarkers = [
+    moved
+      ? {
+          key: "moved",
+          label: locale === "zh-CN" ? "移" : "M"
+        }
+      : null,
+    attacked
+      ? {
+          key: "attacked",
+          label: locale === "zh-CN" ? "攻" : "A"
+        }
+      : null
+  ].filter((marker): marker is { key: string; label: string } => marker !== null);
 
   return (
     <g
@@ -203,23 +232,47 @@ function Counter({
       data-unit-kind={unit.kind}
       data-unit-side={unit.side}
       data-hex-id={unit.hexId}
+      data-moved={moved || undefined}
+      data-attacked={attacked || undefined}
     >
-      <rect className="counter__shadow" x="4" y="5" width="78" height="78" rx="8" />
-      <rect className="counter__body" x="2" y="2" width="78" height="78" rx="7" />
-      <path className="counter__band" d="M2 60h78v20H2z" />
-      <UnitGlyph kind={unit.kind} />
-      {unit.kind === "grenadier" && <text className="counter__badge" x="62" y="20">G</text>}
-      {(unit.kind === "lightInfantry" || unit.kind === "lightCavalry") && (
-        <text className="counter__badge counter__badge--light" x="62" y="20">L</text>
-      )}
-      <text className="counter__defense" x="11" y="18">{unit.stats.defense}</text>
-      <text className="counter__stat" x="12" y="75">{unit.stats.attack}</text>
-      <text className="counter__stat" x="40" y="75" textAnchor="middle">{unit.stats.range}</text>
-      <text className="counter__stat" x="70" y="75" textAnchor="end">{unit.stats.movement}</text>
-      {selectionIndex !== undefined && (
-        <g className="counter__selection-index">
-          <circle cx="79" cy="42" r="11" />
-          <text x="79" y="47" textAnchor="middle">{selectionIndex + 1}</text>
+      <g transform={`rotate(${counterRotation} 42 42)`}>
+        <rect className="counter__shadow" x="4" y="5" width="78" height="78" rx="8" />
+        <rect className="counter__body" x="2" y="2" width="78" height="78" rx="7" />
+        <path className="counter__band" d="M2 60h78v20H2z" />
+        <UnitGlyph kind={unit.kind} />
+        {unit.kind === "grenadier" && <text className="counter__badge" x="62" y="20">G</text>}
+        {(unit.kind === "lightInfantry" || unit.kind === "lightCavalry") && (
+          <text className="counter__badge counter__badge--light" x="62" y="20">L</text>
+        )}
+        <text className="counter__defense" x="11" y="18">{unit.stats.defense}</text>
+        <text className="counter__stat" x="12" y="75">{unit.stats.attack}</text>
+        <text className="counter__stat" x="40" y="75" textAnchor="middle">{unit.stats.range}</text>
+        <text className="counter__stat" x="70" y="75" textAnchor="end">{unit.stats.movement}</text>
+        {selectionIndex !== undefined && (
+          <g className="counter__selection-index">
+            <circle cx="79" cy="42" r="11" />
+            <text x="79" y="47" textAnchor="middle">{selectionIndex + 1}</text>
+          </g>
+        )}
+      </g>
+      {actionMarkers.length > 0 && (
+        <g
+          className="counter__action-markers"
+          transform={`rotate(${landscapeRotation} 42 42)`}
+          aria-hidden="true"
+        >
+          {actionMarkers.map((marker, index) => {
+            const x = actionMarkers.length === 1 ? 42 : 31 + index * 22;
+            return (
+              <g
+                key={marker.key}
+                className={`counter__action-marker counter__action-marker--${marker.key}`}
+              >
+                <circle cx={x} cy="3" r="10" />
+                <text x={x} y="7" textAnchor="middle">{marker.label}</text>
+              </g>
+            );
+          })}
         </g>
       )}
     </g>
@@ -230,6 +283,8 @@ export function GameBoard({
   locale,
   units,
   activeSide,
+  movedUnitIds,
+  attackedUnitIds,
   selectedUnitIds,
   targetUnitId,
   inspectedHexId,
@@ -478,12 +533,22 @@ export function GameBoard({
               const terrain = cell.terrain
                 .map((kind) => translate(locale, `terrain.${kind}`))
                 .join(", ");
+              const unitActionLabels = occupyingUnit
+                ? [
+                    movedUnitIds.includes(occupyingUnit.id)
+                      ? translate(locale, "status.moved")
+                      : null,
+                    attackedUnitIds.includes(occupyingUnit.id)
+                      ? translate(locale, "status.attacked")
+                      : null
+                  ].filter(Boolean)
+                : [];
               const label = `${cell.id}, ${terrain}${
                 occupyingUnit
                   ? `, ${translate(locale, `side.${occupyingUnit.side}`)} ${translate(
                       locale,
                       `unit.${occupyingUnit.kind}`
-                    )}`
+                    )}${unitActionLabels.length > 0 ? `, ${unitActionLabels.join(", ")}` : ""}`
                   : ""
               }${
                 cell.id === selectedRetreatDestination
@@ -537,7 +602,10 @@ export function GameBoard({
             {units.map((unit) => (
               <Counter
                 key={unit.id}
+                locale={locale}
                 unit={unit}
+                moved={movedUnitIds.includes(unit.id)}
+                attacked={attackedUnitIds.includes(unit.id)}
                 selected={
                   selectedUnitIds.includes(unit.id) ||
                   unit.id === targetUnit?.id ||

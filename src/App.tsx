@@ -6,6 +6,7 @@ import {
 import { DiceRoll, type DiceRollState } from "./components/DiceRoll";
 import { GameBoard } from "./components/GameBoard";
 import { GameGuide } from "./components/GameGuide";
+import { MusicToggle } from "./components/MusicToggle";
 import { PursuitPanel } from "./components/PursuitPanel";
 import { RetreatPanel } from "./components/RetreatPanel";
 import { SetupDialog } from "./components/SetupDialog";
@@ -37,6 +38,7 @@ import type {
   Unit
 } from "./game/types";
 import { translate } from "./i18n";
+import { useBackgroundMusic } from "./audio/useBackgroundMusic";
 
 const SAVE_KEY = "lobositz-game-v2";
 const MANUAL_SAVE_KEY = "lobositz-manual-save-v1";
@@ -154,6 +156,7 @@ function UnitSummary({ unit, locale }: { unit: Unit; locale: Locale }) {
 
 export default function App() {
   const [state, dispatch] = useReducer(gameReducer, undefined, loadSavedState);
+  const backgroundMusic = useBackgroundMusic();
   const [locale, setLocale] = useState<Locale>(() =>
     localStorage.getItem("lobositz-locale") === "en" ? "en" : "zh-CN"
   );
@@ -206,6 +209,33 @@ export default function App() {
   useEffect(() => {
     if (state.winner) setVictoryVisible(true);
   }, [state.winner]);
+
+  useEffect(() => {
+    if (
+      setupFlow !== null ||
+      !backgroundMusic.enabled ||
+      backgroundMusic.status !== "idle"
+    ) {
+      return;
+    }
+
+    const unlockMusic = () => {
+      window.removeEventListener("pointerdown", unlockMusic, true);
+      window.removeEventListener("keydown", unlockMusic, true);
+      void backgroundMusic.play();
+    };
+    window.addEventListener("pointerdown", unlockMusic, true);
+    window.addEventListener("keydown", unlockMusic, true);
+    return () => {
+      window.removeEventListener("pointerdown", unlockMusic, true);
+      window.removeEventListener("keydown", unlockMusic, true);
+    };
+  }, [
+    backgroundMusic.enabled,
+    backgroundMusic.play,
+    backgroundMusic.status,
+    setupFlow
+  ]);
 
   useEffect(() => {
     setSelectedUnitIds([]);
@@ -535,6 +565,7 @@ export default function App() {
     options: GameOptions
   ) {
     if (mode !== "random" && units?.length !== 28) return;
+    backgroundMusic.restart();
     const initialState =
       mode === "random"
         ? createInitialState(Math.random, options)
@@ -694,14 +725,24 @@ export default function App() {
             </span>
           )}
         </div>
-        <button
-          type="button"
-          className="language-button"
-          onClick={() => setLocale((current) => (current === "en" ? "zh-CN" : "en"))}
-          aria-label={translate(locale, "app.localeLabel")}
-        >
-          {translate(locale, "app.locale")}
-        </button>
+        <div className="command-actions">
+          <MusicToggle
+            enabled={backgroundMusic.enabled}
+            locale={locale}
+            status={backgroundMusic.status}
+            onToggle={backgroundMusic.toggle}
+          />
+          <button
+            type="button"
+            className="language-button"
+            onClick={() =>
+              setLocale((current) => (current === "en" ? "zh-CN" : "en"))
+            }
+            aria-label={translate(locale, "app.localeLabel")}
+          >
+            {translate(locale, "app.locale")}
+          </button>
+        </div>
       </header>
 
       <main className="game-layout">
@@ -777,6 +818,8 @@ export default function App() {
             locale={locale}
             units={state.units}
             activeSide={state.activeSide}
+            movedUnitIds={state.movedThisTurn}
+            attackedUnitIds={state.attackedThisTurn}
             selectedUnitIds={selectedUnitIds}
             targetUnitId={targetUnitId}
             inspectedHexId={inspectedHexId}
@@ -795,11 +838,26 @@ export default function App() {
         <aside className="inspector">
           <div className="inspector__eyebrow">
             <span>{translate(locale, "app.prototype")}</span>
-            <span>v1.0</span>
+            <span>v1.1</span>
           </div>
 
-          <GameGuide locale={locale} placement="sidebar" />
+          <section
+            className={`game-intelligence ${
+              pendingRetreat || pendingPursuit ? "has-pending-decision" : ""
+            }`}
+            aria-labelledby="game-intelligence-title"
+          >
+            <header className="game-intelligence__heading">
+              <div>
+                <span>{translate(locale, "panel.gameInfoScope")}</span>
+                <h2 id="game-intelligence-title">
+                  {translate(locale, "panel.gameInfo")}
+                </h2>
+              </div>
+              <i aria-hidden="true">⌖</i>
+            </header>
 
+            <div className="game-intelligence__body">
           {diceRoll && (
             <div ref={diceRef} className="dice-roll-anchor">
               <DiceRoll locale={locale} roll={diceRoll} />
@@ -989,6 +1047,27 @@ export default function App() {
             </section>
           )}
 
+          <section className="dispatch-log" aria-live="polite">
+            <h2>{translate(locale, "panel.log")}</h2>
+            <ol>
+              {[...state.log].reverse().slice(0, 5).map((entry) => (
+                <li key={entry.id}>
+                  <i className={`side-mark side-mark--${entry.side ?? state.activeSide}`} />
+                  <span>
+                    {translate(locale, entry.key, {
+                      ...entry.values,
+                      side: localizedSide(locale, entry.side ?? state.activeSide)
+                    })}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </section>
+            </div>
+          </section>
+
+          <GameGuide locale={locale} placement="sidebar" />
+
           <section className="save-panel" aria-labelledby="save-panel-title">
             <div className="save-panel__heading">
               <div>
@@ -1030,23 +1109,6 @@ export default function App() {
                 {translate(locale, `save.notice.${saveNotice}`)}
               </p>
             )}
-          </section>
-
-          <section className="dispatch-log" aria-live="polite">
-            <h2>{translate(locale, "panel.log")}</h2>
-            <ol>
-              {[...state.log].reverse().slice(0, 5).map((entry) => (
-                <li key={entry.id}>
-                  <i className={`side-mark side-mark--${entry.side ?? state.activeSide}`} />
-                  <span>
-                    {translate(locale, entry.key, {
-                      ...entry.values,
-                      side: localizedSide(locale, entry.side ?? state.activeSide)
-                    })}
-                  </span>
-                </li>
-              ))}
-            </ol>
           </section>
 
           <footer className="inspector__footer">
