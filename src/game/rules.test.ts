@@ -928,6 +928,25 @@ describe("combat sequence", () => {
     );
   });
 
+  it("clears movement and attack markers when the next side's turn begins", () => {
+    const state = isolatedState([
+      piece("P-I", "prussian", "infantry", "0,9", {
+        attack: 2,
+        range: 2,
+        movement: 2,
+        defense: 6
+      })
+    ]);
+    state.movedThisTurn = ["P-I"];
+    state.attackedThisTurn = ["P-I"];
+
+    const ended = gameReducer(state, { type: "endTurn" });
+
+    expect(ended.activeSide).toBe("austrian");
+    expect(ended.movedThisTurn).toEqual([]);
+    expect(ended.attackedThisTurn).toEqual([]);
+  });
+
   it("keeps disordered units flipped when their hex is in an enemy zone of control", () => {
     const prussian = piece("P-I", "prussian", "infantry", "4,5", {
       attack: 2,

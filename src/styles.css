@@ -185,6 +185,86 @@ button:focus-visible,
   background: var(--shell-soft);
 }
 
+.command-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.music-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 7px 11px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--shell-raised);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 720;
+  cursor: pointer;
+  transition:
+    border-color 180ms ease-out,
+    background-color 180ms ease-out,
+    color 180ms ease-out;
+}
+
+.music-button:hover {
+  border-color: var(--paper-muted);
+  background: var(--shell-soft);
+  color: var(--text);
+}
+
+.music-button[aria-pressed="true"] {
+  border-color: oklch(0.6 0.07 80);
+  color: var(--paper-muted);
+}
+
+.music-button svg {
+  width: 19px;
+  height: 19px;
+  overflow: visible;
+  fill: currentColor;
+}
+
+.music-button__wave,
+.music-button__slash {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 1.7;
+}
+
+.music-button > i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+
+.music-button.is-playing > i {
+  background: var(--success);
+  box-shadow: 0 0 0 2px oklch(0.72 0.13 145 / 0.13);
+}
+
+.music-button.is-loading > i {
+  background: var(--accent);
+  animation: music-loading 900ms ease-in-out infinite alternate;
+}
+
+.music-button.is-error > i {
+  background: var(--danger);
+}
+
+@keyframes music-loading {
+  to {
+    opacity: 0.35;
+  }
+}
+
 .game-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 328px;
@@ -1320,6 +1400,29 @@ button:focus-visible,
   opacity: 0.88;
 }
 
+.counter__action-marker circle {
+  fill: oklch(0.27 0.025 95);
+  stroke: oklch(0.94 0.02 92);
+  stroke-width: 2.5px;
+}
+
+.counter__action-marker text {
+  fill: oklch(0.96 0.012 92);
+  font-size: 11px;
+  font-weight: 900;
+  paint-order: stroke;
+  stroke: oklch(0.2 0.02 95 / 0.6);
+  stroke-width: 1px;
+}
+
+.counter__action-marker--moved circle {
+  fill: oklch(0.43 0.1 225);
+}
+
+.counter__action-marker--attacked circle {
+  fill: oklch(0.45 0.14 35);
+}
+
 .zoom-controls {
   position: absolute;
   top: 12px;
@@ -1386,6 +1489,87 @@ button:focus-visible,
   font-weight: 780;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+}
+
+.game-intelligence {
+  flex: 0 0 auto;
+  overflow: hidden;
+  border: 1px solid oklch(0.68 0.105 79);
+  border-radius: 8px;
+  background: oklch(0.255 0.026 101);
+  box-shadow: 0 12px 28px oklch(0.16 0.02 105 / 0.28);
+}
+
+.game-intelligence__heading {
+  display: flex;
+  min-height: 66px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 13px 12px 15px;
+  border-bottom: 1px solid oklch(0.66 0.09 80 / 0.72);
+  background: oklch(0.36 0.052 82);
+}
+
+.game-intelligence__heading > div {
+  display: grid;
+  gap: 3px;
+}
+
+.game-intelligence__heading span {
+  color: oklch(0.84 0.09 86);
+  font-size: 0.59rem;
+  font-weight: 760;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.game-intelligence__heading h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 780;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+}
+
+.game-intelligence__heading > i {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid oklch(0.82 0.09 84 / 0.48);
+  border-radius: 50%;
+  color: oklch(0.9 0.07 88);
+  font-size: 1.05rem;
+  font-style: normal;
+}
+
+.game-intelligence.has-pending-decision {
+  border-color: oklch(0.78 0.14 84);
+  box-shadow: 0 12px 30px oklch(0.7 0.11 80 / 0.11);
+}
+
+.game-intelligence__body {
+  padding: 15px;
+}
+
+.game-intelligence__body > :first-child {
+  margin-top: 0;
+}
+
+.game-intelligence__body > .empty-selection:last-child {
+  border-bottom: 0;
+}
+
+.game-intelligence .dispatch-log {
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.game-intelligence + .game-guide--sidebar {
+  margin-top: 18px;
 }
 
 .dice-roll-anchor {
@@ -2482,12 +2666,30 @@ button:focus-visible,
     grid-column: 1 / -1;
   }
 
+  .game-intelligence {
+    grid-column: 1 / -1;
+  }
+
+  .game-intelligence__body {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    grid-auto-rows: min-content;
+    gap: 0 18px;
+  }
+
   .dispatch-log {
     grid-column: 2;
-    grid-row: 2 / span 3;
+    grid-row: 1 / span 5;
     margin-top: 0;
   }
 
+  .game-intelligence .dispatch-log {
+    padding: 0 0 0 18px;
+    border-top: 0;
+    border-left: 1px solid var(--line);
+  }
+
+  .dice-roll-anchor,
   .selection-section,
   .ruling,
   .empty-selection,
@@ -2669,7 +2871,7 @@ button:focus-visible,
   .turn-readout {
     position: absolute;
     top: 10px;
-    right: 74px;
+    right: 126px;
     min-width: auto;
     padding: 0;
     border: 0;
@@ -2693,6 +2895,32 @@ button:focus-visible,
     min-width: 48px;
     min-height: 42px;
     padding-inline: 8px;
+  }
+
+  .command-actions {
+    gap: 6px;
+  }
+
+  .music-button {
+    width: 42px;
+    min-height: 42px;
+    padding: 7px;
+  }
+
+  .music-button > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .music-button > i {
+    position: absolute;
+    right: 5px;
+    bottom: 5px;
   }
 
   .game-layout {
@@ -2751,6 +2979,22 @@ button:focus-visible,
   .inspector {
     display: block;
     padding: 12px 14px calc(14px + env(safe-area-inset-bottom));
+  }
+
+  .game-intelligence__heading {
+    min-height: 58px;
+    padding-block: 9px 10px;
+  }
+
+  .game-intelligence__body {
+    display: block;
+    padding: 12px;
+  }
+
+  .game-intelligence .dispatch-log {
+    padding: 13px 0 0;
+    border-top: 1px solid var(--line);
+    border-left: 0;
   }
 
   .inspector__eyebrow {
